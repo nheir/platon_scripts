@@ -1,0 +1,16 @@
+# Requirement
+# - subject_code
+
+builder==
+from splitcode import splitcodestring
+
+ret = splitcodestring(subject_code)
+for k in ret:
+    globals()[k]=ret[k]
+
+if 'checks_args_stdin' in ret:
+    checks_args_stdin = eval(checks_args_stdin)
+
+# title, statement, code_before, code, code_after, soluce, statement...
+__all__ = [k for k in ret]
+==

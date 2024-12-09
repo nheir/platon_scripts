@@ -1,0 +1,15 @@
+@extends multi_builder.ple
+
+subject_code = @copycontent example.c
+
+# Create variables for c builder/grader
+builder_0 = @extends split.ple 
+
+# Build reference code and test output
+builder_1 = @extends c.ple
+
+# Compile
+grader_0 = @extends c.ple
+
+# Test
+grader_1 = @extends executor.ple

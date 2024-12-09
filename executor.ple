@@ -1,0 +1,67 @@
+# Requirement
+# - checks_args_stdin
+# - executable_name
+
+grader ==
+__all__ = ['grade', 'feedback']
+
+import subprocess
+def indent(content, spaces):
+    return ''.join(spaces + line + '\n' for line in content.splitlines())
+
+template_wrong_output = """# {test_name} [FAILED]
+Command line: {cmdline}
+Input:
+{input}
+
+Expected:
+{expected}
+
+Result:
+{value}
+"""
+
+template_correct_output = """# {test_name} [OK]
+Command line: {cmdline}
+Input:
+{input}
+
+Result:
+{value}
+"""
+
+
+if 'executable_name' in globals() and checks_args_stdin:
+    success = 0
+    for test in checks_args_stdin:
+        name, args, input, output = test[:4]
+        ret = subprocess.run([executable_name] + args, input=input, capture_output=True, text=True)
+        if output != ret.stdout + ret.stderr:
+            feedback.append({
+                'type': 'error',
+                'content': template_wrong_output.format(
+                    test_name=name,
+                    cmdline=' '.join(ret.args),
+                    input=input if input else '<empty>',
+                    expected=indent(output, '    '),
+                    value=indent(ret.stdout + ret.stderr, '    ')
+                )
+            })
+        elif ret.returncode != 0:
+            feedback.append({
+                'type': 'warning',
+                'content': 'Le code renvoie un code de retour différent de 0\n'
+            })
+        else:
+            feedback.append({
+                'type': 'success',
+                'content': template_wrong_output.format(
+                    test_name=name,
+                    cmdline=' '.join(ret.args),
+                    input=input if input else '<empty>',
+                    value=indent(output, '    '),
+                )
+            })
+            success += 1
+    grade *= success / len(checks_args_stdin)
+==

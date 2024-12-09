@@ -1,0 +1,54 @@
+builder ==
+def run_builders():
+    env = globals()
+
+    builders = [ k for k in globals() if k.startswith("builder_")]
+    builders.sort()
+
+    for k in builders:
+        local_env = dict(env)
+        v = globals()[k]
+        # If comming from a @extends .ple
+        if isinstance(v, dict) and 'builder' in v:
+            exec(v['builder'], local_env)
+        elif isinstance(v, str):
+            exec(v, local_env)
+        else:
+            raise Exception("builder from %s is missing" % k)
+        
+        if '__all__' in local_env:
+            for k in local_env['__all__']:
+                env[k] = local_env[k]
+        else:
+            env.update(local_env)
+
+run_builders()
+del run_builders
+==
+
+grader ==
+def run_graders():
+    env = globals()
+
+    graders = [ k for k in globals() if k.startswith("grader_")]
+    graders.sort()
+
+    for k in graders:
+        local_env = dict(env)
+        v = globals()[k]
+        # If comming from a @extends .ple
+        if isinstance(v, dict) and 'grader' in v:
+            exec(v['grader'], local_env)
+        elif isinstance(v, str):
+            exec(v, local_env)
+        else:
+            raise Exception("grader from %s is missing" % k)
+
+        if '__all__' in local_env:
+            for k in local_env['__all__']:
+                env[k] = local_env[k]
+        else:
+            env.update(local_env)
+run_graders()
+del run_graders
+==
