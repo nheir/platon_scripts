@@ -7,7 +7,7 @@ def clean(env):
     for k in glob:
         if k in env and glob[k] == env[k]:
             del env[k]
-    
+
     exclude_types = [types.ModuleType, types.FunctionType]
     for k, v in list(env.items()):
         if v is None:
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     with open(sys.argv[1], "r") as f:
         variables = parse_syntax(f.read())
-    
+
     with open(sys.argv[2], "r") as f:
         input = f.read()
 
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     variables['input'] = input
 
     keys = list(variables)
-    
+
     variables['grade'] = -1
     variables['feedback'] = []
     run(variables['grader'], variables)

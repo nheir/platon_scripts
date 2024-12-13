@@ -5,14 +5,16 @@
 # - checks_args_stdin
 # - input (grader only)
 
-builder ==
+sandbox = "python"
+
+builder == #!lang=python
 __all__ = ['checks_args_stdin', 'CFLAGS', 'LDFLAGS', 'LDLIBS']
 
 import subprocess
 # Build reference code
 def build(code, output, cc='gcc', cflags=['-Wall'], ldflags=[], ldlibs=[]):
     return subprocess.run(
-        [cc] + cflags + ldflags + ["-x", "c", "-", "-o", output], 
+        [cc] + cflags + ldflags + ["-x", "c", "-", "-o", output],
         input=code,
         capture_output=True, text=True
     )
@@ -42,37 +44,39 @@ for test in checks_args_stdin:
     test.append(ret.stdout + ret.stderr)
 ==
 
-grader ==
-__all__ = ['grade', 'feedback', 'executable_name']
+grader == #!lang=python
+__all__ = ['executable_name']
 
 # Build submission
 import subprocess
 
 def build(code, output, cc='gcc', cflags=['-Wall'], ldflags=[], ldlibs=[]):
     return subprocess.run(
-        [cc] + cflags + ldflags + ["-x", "c", "-", "-o", output], 
+        [cc] + cflags + ldflags + ["-x", "c", "-", "-o", output],
         input=code,
         capture_output=True, text=True
     )
 
+executable_name = None
 ret = build(code_before + input + code_after, "studex", cflags=CFLAGS, ldflags=LDFLAGS, ldlibs=LDLIBS)
 if ret.returncode != 0:
     grade = 0
-    feedback.append({
+    feedback = {
         'type': 'error',
         'content': 'Le code ne compile pas :\n%s\n' % (ret.stdout + ret.stderr)
-    })
+    }
 else:
     if ret.stdout:
-        grade *= 0.9
-        feedback.append({
+        grade = 90
+        feedback = {
             'type': 'warning',
             'content': 'Le code provoque ne semble pas propre :\n%s\n' % (ret.stdout + ret.stderr)
-        })
+        }
     else:
-        feedback.append({
+        grade = 100
+        feedback = {
             'type': 'success',
             'content': 'Le code compile proprement.\n'
-        })
+        }
     executable_name = "./studex"
 ==

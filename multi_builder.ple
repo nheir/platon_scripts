@@ -1,8 +1,48 @@
-builder ==
+## Example of usage:
+#
+# @extends /path/of/this.ple
+#
+## Define globals that each builder/grader may set (as value, a global list/dict may be modified from any script)
+## Note: grade/feedback are exported from each grader
+# multi_export = {
+#     "builder_1": ['code_before', 'code', 'code_after', 'soluce', 'checks_args_stdin', 'title', 'statement'],
+#     "builder_2": ['CFLAGS', 'LDFLAGS', 'LDLIBS', 'checks_args_stdin'],
+#     "grader_0": ['executable_name'],
+# }
+#
+## Create variables for c builder/grader
+# builder_1 = @extends split.ple
+#
+## Build reference code and test output
+# builder_2 = @extends c.ple
+#
+## Compile
+# grader_0 = @extends c.ple
+#
+## Test
+# grader_1 = @extends executor.ple
+
+## Final feedback is an array of all feedbacks
+## Grade is computed according a rule
+## - "last": take last grader's grade (default)
+## - "prod": take the product of all grades
+## - "avg": take the average of all grades
+## - weighted: take the weighted sum of all grades
+## multi_grade_rule = "last"
+# multi_grade_rule = [1, 9]
+#
+## TODO: function object ?
+
+sandbox = "python"
+
+builder == #!lang=python
+if 'multi_export' not in globals():
+    multi_export = {}
+
 def run_builders():
     env = globals()
 
-    builders = [ k for k in globals() if k.startswith("builder_")]
+    builders = [ k for k in globals() if k.startswith("builder_") and k[8:].isdigit()]
     builders.sort()
 
     for k in builders:
@@ -15,26 +55,53 @@ def run_builders():
             exec(v, local_env)
         else:
             raise Exception("builder from %s is missing" % k)
-        
-        if '__all__' in local_env:
-            for k in local_env['__all__']:
+
+        keys = []
+        if k in multi_export:
+            keys = multi_export[k]
+        elif '__all__' in local_env:
+            keys = local_env['__all__']
+        for k in keys:
+            if k in local_env:
                 env[k] = local_env[k]
-        else:
-            env.update(local_env)
 
 run_builders()
 del run_builders
 ==
 
-grader ==
+multi_grade_rule = "last"
+
+grader == #!lang=python
+if 'multi_export' not in globals():
+    multi_export = {}
+
+# grade & feedback must be globals
+grade = -1
+feedback = []
+
+if multi_grade_rule not in ['last', 'prod', 'avg'] and not isinstance(multi_grade_rule, list):
+    multi_grade_rule = 'last'
+
 def run_graders():
     env = globals()
 
     graders = [ k for k in globals() if k.startswith("grader_")]
     graders.sort()
 
+    if multi_grade_rule == 'last':
+        weights = [0]*(len(graders) - 1) + [1]
+    elif multi_grade_rule == 'avg':
+        weights = [1 / len(graders)]*len(graders)
+    elif multi_grade_rule != 'prod':
+        tot = sum(multi_grade_rule)
+        weights = [ w / tot for w in multi_grade_rule]
+
+    grades = []
+
     for k in graders:
         local_env = dict(env)
+        del local_env['feedback']
+
         v = globals()[k]
         # If comming from a @extends .ple
         if isinstance(v, dict) and 'grader' in v:
@@ -44,11 +111,38 @@ def run_graders():
         else:
             raise Exception("grader from %s is missing" % k)
 
-        if '__all__' in local_env:
-            for k in local_env['__all__']:
+        keys = []
+        if k in multi_export:
+            keys = multi_export[k]
+        elif '__all__' in local_env:
+            keys = local_env['__all__']
+        for k in keys:
+            if k in local_env:
                 env[k] = local_env[k]
-        else:
-            env.update(local_env)
+
+        # Add the feedback (array or object)
+        if isinstance(local_env['feedback'], list):
+            env['feedback'] += local_env['feedback']
+        elif isinstance(local_env['feedback'], dict):
+            env['feedback'] += [local_env['feedback']]
+
+        # Stop grader when a grader fails
+        if local_env['grade'] < 0:
+            env['grade'] = -1
+            return
+
+        grades.append(local_env['grade'])
+
+    # Compute grade
+    if multi_grade_rule == "prod":
+        env['grade'] = 100
+        for g in grades:
+            env['grade'] *= g
+    else:
+        env['grade'] = 0
+        for g, w in zip(grades, weights):
+            env['grade'] += g * w
+
 run_graders()
 del run_graders
 ==

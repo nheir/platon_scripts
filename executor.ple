@@ -2,9 +2,9 @@
 # - checks_args_stdin
 # - executable_name
 
-grader ==
-__all__ = ['grade', 'feedback']
+sandbox = "python"
 
+grader == #!lang=python
 import subprocess
 def indent(content, spaces):
     return ''.join(spaces + line + '\n' for line in content.splitlines())
@@ -30,8 +30,8 @@ Result:
 {value}
 """
 
-
-if 'executable_name' in globals() and checks_args_stdin:
+feedback = []
+if executable_name and checks_args_stdin:
     success = 0
     for test in checks_args_stdin:
         name, args, input, output = test[:4]
@@ -63,5 +63,11 @@ if 'executable_name' in globals() and checks_args_stdin:
                 )
             })
             success += 1
-    grade *= success / len(checks_args_stdin)
+    grade = 100 * success / len(checks_args_stdin)
+else:
+    grade = 100
+    feedback.append({
+        'type': 'success',
+        'content': 'Aucun test à réaliser',
+    })
 ==

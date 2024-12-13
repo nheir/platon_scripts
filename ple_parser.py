@@ -32,11 +32,7 @@ def parse_syntax(input_text):
             elif '=' in line:
                 # Single-line key-value pair
                 key, value = map(str.strip, line.split('=', 1))
-                if value.isdigit():
-                    data[key] = int(value)
-                elif value[0] == '"':
-                    data[key] = value[1:-1]
-                elif value.startswith("@extends"):
+                if value.startswith("@extends"):
                     file = value.split(' ', 1)[1].strip()
                     with open(file, "r") as f:
                         ret = parse_syntax(f.read())
@@ -47,8 +43,7 @@ def parse_syntax(input_text):
                         ret = f.read()
                     data[key] = ret
                 else:
-                    data[key] = "<unsuported : " + value + ">"
-
+                    data[key] = eval(value)
 
     return data
 

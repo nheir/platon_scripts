@@ -2,14 +2,27 @@
 
 subject_code = @copycontent example.c
 
+multi_export = { "builder_0":['multi_export'] }
+builder_0 ==
+# Hack for low-cost ple parser
+multi_export = {
+    "builder_0": ['multi_export'],
+    "builder_1": ['code_before', 'code', 'code_after', 'soluce', 'checks_args_stdin', 'title', 'statement'],
+    "builder_2": ['CFLAGS', 'LDFLAGS', 'LDLIBS'],
+    "grader_0": ['executable_name'],
+}
+==
+
 # Create variables for c builder/grader
-builder_0 = @extends split.ple 
+builder_1 = @extends split.ple
 
 # Build reference code and test output
-builder_1 = @extends c.ple
+builder_2 = @extends c.ple
 
 # Compile
 grader_0 = @extends c.ple
 
 # Test
 grader_1 = @extends executor.ple
+
+multi_grade_rule = [1,9]

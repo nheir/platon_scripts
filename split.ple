@@ -1,7 +1,9 @@
 # Requirement
 # - subject_code
 
-builder==
+sandbox = "python"
+
+builder == #!lang=python
 from splitcode import splitcodestring
 
 ret = splitcodestring(subject_code)
