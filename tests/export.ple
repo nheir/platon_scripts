@@ -1,0 +1,32 @@
+@extends multi_builder.ple
+
+title = "Main Title"
+statement = "Main Statement"
+
+other = "Main Other"
+
+multi_export = { "builder_0": ["title"], "builder_1": ["statement"], "grader_0":["another"] }
+
+builder_0 ==
+title = "Title 0"
+statement = "Statement 0"
+other = "Other 0"
+==
+
+builder_1 ==
+title = "Title 1"
+statement = "Statement 1"
+other = "Other 1"
+==
+
+grader_0 ==
+another = "Another one"
+==
+
+grader_1 ==
+grade = 100
+feedback = {
+    "type": "info",
+    "content": "\n".join([title, statement, other]),
+}
+==

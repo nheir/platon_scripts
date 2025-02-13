@@ -1,0 +1,20 @@
+@extends multi_builder.ple
+
+title = "Title"
+statement = "Statement"
+
+multi_grade_rule = "max"
+
+grader_0 ==
+grade = 10
+==
+grader_1 ==
+==
+grader_2 ==
+grade = 80
+==
+grader_3 ==
+grade = 30
+==
+grader_4 ==
+==
