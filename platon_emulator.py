@@ -1,6 +1,8 @@
 import types
 from ple_parser import parse_syntax
 
+import argparse
+
 def clean(env):
     glob = {}
     exec("", glob)
@@ -24,18 +26,45 @@ def run(code, env):
     clean(env)
 
 if __name__ == "__main__":
-    import sys
+    parser = argparse.ArgumentParser(
+        prog="PLaton Emulator",
+        description="Emulate the execution of a PLaton exercice in PLaton"
+    )
+    parser.add_argument("exercice", help="exercice file")
+    parser.add_argument(
+        "-e", "--env",
+        help="define an environment variable, use @file to use file content",
+        metavar="var=foo",
+        action="append",
+        default=[]
+    )
+    parser.add_argument(
+        "-i", "--input",
+        help="define the input.code content from file",
+        metavar="input_file"
+    )
 
-    with open(sys.argv[1], "r") as f:
+    args = parser.parse_args()
+
+    env = {}
+    for entry in args.env:
+        if "=" in entry:
+            k,v = entry.split('=', maxsplit=1)
+            if v[0] == '@':
+                with open(v[1:], 'r') as f:
+                    v = f.read()
+            env[k] = v
+        else:
+            env[entry] = ''
+
+    with open(args.exercice, "r") as f:
         variables = parse_syntax(f.read())
 
-    if sys.argv[2:]:
-        with open(sys.argv[2], "r") as f:
-            input = f.read()
-    else:
-        input = ''
+    with open(args.input, "r") as f:
+        input = f.read()
 
     environment = variables
+    environment.update(env)
 
     if 'builder' in variables:
         run(variables['builder'], variables)
