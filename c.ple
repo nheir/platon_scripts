@@ -31,7 +31,7 @@ if 'LDLIBS' not in globals():
 
 ret = build(code_before + soluce + code_after, "profex", cflags=CFLAGS, ldflags=LDFLAGS, ldlibs=LDLIBS)
 if ret.returncode != 0:
-    raise Exception("Reference code cannot be built")
+    raise Exception("c.ple: Reference code cannot be built")
 
 # Complete test cases with expected output
 for test in checks_args_stdin:

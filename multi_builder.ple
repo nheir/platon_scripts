@@ -50,11 +50,14 @@ def run_builders():
         v = globals()[k]
         # If comming from a @extends .ple
         if isinstance(v, dict) and 'builder' in v:
-            exec(v['builder'], local_env)
+            source = v['builder']
         elif isinstance(v, str):
-            exec(v, local_env)
+            source = v
         else:
             raise Exception("builder from %s is missing" % k)
+
+        bytecode = compile(source, k, "exec")
+        exec(bytecode, local_env)
 
         keys = []
         if k in multi_export:
