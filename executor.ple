@@ -55,7 +55,7 @@ if executable_name and checks_args_stdin:
         else:
             feedback.append({
                 'type': 'success',
-                'content': template_wrong_output.format(
+                'content': template_correct_output.format(
                     test_name=name,
                     cmdline=' '.join(ret.args),
                     input=input if input else '<empty>',

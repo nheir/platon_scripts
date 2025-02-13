@@ -29,8 +29,11 @@ if __name__ == "__main__":
     with open(sys.argv[1], "r") as f:
         variables = parse_syntax(f.read())
 
-    with open(sys.argv[2], "r") as f:
-        input = f.read()
+    if sys.argv[2:]:
+        with open(sys.argv[2], "r") as f:
+            input = f.read()
+    else:
+        input = ''
 
     environment = variables
 
@@ -41,7 +44,7 @@ if __name__ == "__main__":
     print("Statement: ", variables['statement'])
     print("Input: ", input)
 
-    variables['input'] = input
+    variables['input'] = { "code": input }
 
     keys = list(variables)
 

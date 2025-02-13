@@ -5,9 +5,9 @@
 ## Define globals that each builder/grader may set (as value, a global list/dict may be modified from any script)
 ## Note: grade/feedback are exported from each grader
 # multi_export = {
-#     "builder_1": ['code_before', 'code', 'code_after', 'soluce', 'checks_args_stdin', 'title', 'statement'],
-#     "builder_2": ['CFLAGS', 'LDFLAGS', 'LDLIBS', 'checks_args_stdin'],
-#     "grader_0": ['executable_name'],
+#     "builder_1": ["code_before", "code", "code_after", "soluce", "checks_args_stdin", "title", "statement"],
+#     "builder_2": ["CFLAGS", "LDFLAGS", "LDLIBS", "checks_args_stdin"],
+#     "grader_0": ["executable_name"],
 # }
 #
 ## Create variables for c builder/grader
