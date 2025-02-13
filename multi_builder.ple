@@ -23,10 +23,11 @@
 # grader_1 = @extends executor.ple
 
 ## Final feedback is an array of all feedbacks
-## Grade is computed according a rule
+## Grade is computed according to a rule by ignoring undefined / grade
 ## - "last": take last grader's grade (default)
 ## - "prod": take the product of all grades
 ## - "avg": take the average of all grades
+## - "min"/"max": take the min/max of all grades
 ## - weighted: take the weighted sum of all grades
 ## multi_grade_rule = "last"
 # multi_grade_rule = [1, 9]
@@ -82,7 +83,7 @@ if 'multi_export' not in globals():
 grade = -1
 feedback = []
 
-if multi_grade_rule not in ['last', 'prod', 'avg'] and not isinstance(multi_grade_rule, list):
+if multi_grade_rule not in ['last', 'prod', 'avg', 'min', 'max'] and not isinstance(multi_grade_rule, list):
     multi_grade_rule = 'last'
 
 def run_graders():
@@ -91,19 +92,12 @@ def run_graders():
     graders = [ k for k in globals() if k.startswith("grader_")]
     graders.sort()
 
-    if multi_grade_rule == 'last':
-        weights = [0]*(len(graders) - 1) + [1]
-    elif multi_grade_rule == 'avg':
-        weights = [1 / len(graders)]*len(graders)
-    elif multi_grade_rule != 'prod':
-        tot = sum(multi_grade_rule)
-        weights = [ w / tot for w in multi_grade_rule]
-
     grades = []
 
     for k in graders:
         local_env = dict(env)
-        del local_env['feedback']
+        local_env['grade'] = None
+        local_env['feedback'] = None
 
         v = globals()[k]
         # If comming from a @extends .ple
@@ -130,7 +124,7 @@ def run_graders():
             env['feedback'] += [local_env['feedback']]
 
         # Stop grader when a grader fails
-        if local_env['grade'] < 0:
+        if local_env['grade'] is not None and local_env['grade'] < 0:
             env['grade'] = -1
             return
 
@@ -140,11 +134,31 @@ def run_graders():
     if multi_grade_rule == "prod":
         env['grade'] = 100
         for g in grades:
-            env['grade'] *= g
+            if g is not None:
+                env['grade'] *= g / 100
+    elif multi_grade_rule == 'last':
+        env['grade'] = 100;
+        for g in grades:
+            if g is not None:
+                env['grade'] = g
+    elif multi_grade_rule == 'min':
+        env['grade'] = min((g for g in grades if g is not None), default=100)
+    elif multi_grade_rule == 'max':
+        env['grade'] = max((g for g in grades if g is not None), default=0)
     else:
+        if multi_grade_rule == 'avg':
+            weights = [1] * len(graders)
+        else:
+            weights = [w for w in multi_grade_rule]
+
         env['grade'] = 0
+        total = 0
         for g, w in zip(grades, weights):
-            env['grade'] += g * w
+            if g is not None:
+                env['grade'] += g * w
+                total += w
+        if total > 0:
+            env['grade'] = env['grade'] / total
 
 run_graders()
 del run_graders
