@@ -1,6 +1,9 @@
 # Requirement
 # - checks_args_stdin
 # - executable_name
+# Optional
+# - ignore_stderr
+# - use_returncode
 
 sandbox = "python"
 
@@ -9,59 +12,84 @@ import subprocess
 def indent(content, spaces):
     return ''.join(spaces + line + '\n' for line in content.splitlines())
 
-template_wrong_output = """# {test_name} [FAILED]
-Command line: {cmdline}
-Input:
-{input}
+OUTPUT_LIMIT = 1000
 
-Expected:
-{expected}
+def format_result(success,
+    test_name, cmdline, stdin, expected_output, output,
+    returncode, expected_returncode
+    ):
+    # Title
+    result = "# {test_name} [{msg}]\n".format(test_name=test_name, msg="OK" if success else "FAILED")
 
-Result:
-{value}
-"""
+    # Command line
+    result += "Command line: {cmdline}\n".format(cmdline=cmdline)
 
-template_correct_output = """# {test_name} [OK]
-Command line: {cmdline}
-Input:
-{input}
+    # Return code when used
+    if use_returncode:
+        if not success and returncode != expected_returncode:
+            result += "Return code: expect {expect}, got {value}\n".format(expect=expected_returncode, value=returncode)
+        else:
+            result += "Return code: {value}\n".format(value=returncode)
 
-Result:
-{value}
-"""
+    # Input
+    result += "Input:\n{stdin}\n".format(stdin=indent(stdin, '    '))
+
+    # Invalid return code (don't display output)
+    if not use_returncode and returncode != expected_returncode:
+        result += "Invalid return code: {value}\n".format(value=returncode)
+        return result
+
+    # Crop output
+    if len(expected_output) > OUTPUT_LIMIT:
+        expected_output = "[too long: redacted]"
+        output = expected_output
+    elif len(output) > OUTPUT_LIMIT:
+        output = output[:OUTPUT_LIMIT]
+
+    if not success:
+        result += "Expected output:\n{output}\n".format(output=indent(expected_output, '    '))
+    result += "Output:\n{output}\n".format(output=indent(output, '    '))
+    return result
+
+if 'ignore_stderr' not in globals():
+    ignore_stderr = False
+if 'use_returncode' not in globals():
+    use_returncode = False
 
 feedback = []
 if executable_name and checks_args_stdin:
     success = 0
     for test in checks_args_stdin:
-        name, args, input, output = test[:4]
-        ret = subprocess.run([executable_name] + args, input=input, capture_output=True, text=True)
-        if output != ret.stdout + ret.stderr:
-            feedback.append({
-                'type': 'error',
-                'content': template_wrong_output.format(
-                    test_name=name,
-                    cmdline=' '.join(ret.args),
-                    input=input if input else '<empty>',
-                    expected=indent(output, '    '),
-                    value=indent(ret.stdout + ret.stderr, '    ')
-                )
-            })
-        elif ret.returncode != 0:
-            feedback.append({
-                'type': 'warning',
-                'content': 'Le code renvoie un code de retour différent de 0\n'
-            })
-        else:
-            feedback.append({
-                'type': 'success',
-                'content': template_correct_output.format(
-                    test_name=name,
-                    cmdline=' '.join(ret.args),
-                    input=input if input else '<empty>',
-                    value=indent(output, '    '),
-                )
-            })
+        name, args, stdin, expected_output = test[:4]
+        expected_returncode = 0
+
+        # Extract test return code
+        if use_returncode and test[4:]:
+            expected_returncode = test[4]
+
+        # Run submitted code
+        ret = subprocess.run([executable_name] + args, input=stdin, capture_output=True, text=True)
+
+        # Build output from stdout + stderr if not ignored
+        output = ret.stdout + ret.stderr if not ignore_stderr else ret.stdout
+
+        ok = (
+            expected_output == output and ret.returncode == expected_returncode
+        )
+        feedback.append({
+            'type': 'success' if ok else 'error',
+            'content': format_result(
+                success=ok,
+                test_name=name,
+                cmdline=' '.join(ret.args),
+                stdin=stdin if stdin else '<empty>',
+                expected_output=expected_output,
+                output=output,
+                expected_returncode=expected_returncode if use_returncode else None,
+                returncode=ret.returncode
+            )
+        })
+        if ok:
             success += 1
     grade = 100 * success / len(checks_args_stdin)
 else:

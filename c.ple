@@ -29,6 +29,11 @@ if 'LDFLAGS' not in globals():
 if 'LDLIBS' not in globals():
     LDLIBS = []
 
+if 'ignore_stderr' not in globals():
+    ignore_stderr = False
+if 'use_returncode' not in globals():
+    use_returncode = False
+
 ret = build(code_before + soluce + code_after, "profex", cflags=CFLAGS, ldflags=LDFLAGS, ldlibs=LDLIBS)
 if ret.returncode != 0:
     raise Exception("c.ple: Reference code cannot be built")
@@ -36,12 +41,20 @@ if ret.returncode != 0:
 # Complete test cases with expected output
 for test in checks_args_stdin:
     name, args, input = test[:3]
+    expected_output = test[3] if len(test) > 3 else None
+    expected_returncode = test[4] if len(test) > 4 else 0
+
     ret = subprocess.run(["./profex"] + args, input=input, capture_output=True, text=True)
-    if ret.returncode != 0:
+
+    output = ret.stdout + ret.stderr if not ignore_stderr else ret.stdout
+
+    if ret.returncode != expected_returncode:
         raise Exception("Reference code cannot run on test `%s`" % name)
-    if len(test) > 3 and test[3] != ret.stdout + ret.stderr:
+
+    if expected_output is None:
+        test.append(output)
+    elif expected_output != output:
         raise Exception("Reference code doesn't produce expected result on test `%s`" % name)
-    test.append(ret.stdout + ret.stderr)
 ==
 
 grader == #!lang=python
