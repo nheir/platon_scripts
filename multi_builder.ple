@@ -102,11 +102,14 @@ def run_graders():
         v = globals()[k]
         # If comming from a @extends .ple
         if isinstance(v, dict) and 'grader' in v:
-            exec(v['grader'], local_env)
+            source = v['grader']
         elif isinstance(v, str):
-            exec(v, local_env)
+            source = v
         else:
             raise Exception("grader from %s is missing" % k)
+
+        bytecode = compile(source, k, "exec")
+        exec(bytecode, local_env)
 
         keys = []
         if k in multi_export:

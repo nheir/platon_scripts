@@ -21,8 +21,9 @@ def clean(env):
                 del env[k]
                 continue
 
-def run(code, env):
-    exec(code, env)
+def run(code, name, env):
+    bytecode = compile(code, name, "exec")
+    exec(bytecode, env)
     clean(env)
 
 if __name__ == "__main__":
@@ -60,14 +61,17 @@ if __name__ == "__main__":
     with open(args.exercice, "r") as f:
         variables = parse_syntax(f.read())
 
-    with open(args.input, "r") as f:
-        input = f.read()
+    if args.input:
+        with open(args.input, "r") as f:
+            input = f.read()
+    else:
+        input = ''
 
     environment = variables
     environment.update(env)
 
     if 'builder' in variables:
-        run(variables['builder'], variables)
+        run(variables['builder'], 'builder', variables)
 
     print("Title: ", variables['title'])
     print("Statement: ", variables['statement'])
@@ -79,7 +83,7 @@ if __name__ == "__main__":
 
     variables['grade'] = -1
     variables['feedback'] = []
-    run(variables['grader'], variables)
+    run(variables['grader'], 'grader', variables)
 
     print("Grade: ", variables['grade'])
     for feedback in variables['feedback']:
