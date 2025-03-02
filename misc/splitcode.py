@@ -72,12 +72,12 @@ def splitcodelist(lines):
                     state= "info"
                     name =  line[6:].split("==")[0]
                     if debug : print(f"Starting info state :<{name}>")
-                    multi="\n"
+                    multi=""
                 elif line.startswith(START1):
                     state= "code"
                     name =  line[len(START1):].split("==")[0]
                     if debug : print(f"Starting code state :<{name}>")
-                    multi="\n"
+                    multi=""
                 continue
             elif state == "info":
                 if line.startswith(END2):
@@ -96,27 +96,3 @@ def splitcodelist(lines):
                     multi +=  line + "\n"
 
     return(dict)
-
-
-
-
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: splitcode.py [--debug] [file ...] ")
-        sys.exit(1)
-    errors = ""
-    for filename in sys.argv[1:]:
-        if filename == "--debug":
-            debug = True
-            continue
-        dico = splitcodefile(filename)
-        for i in LISTOFVARIABLES:
-            if not i in dico:
-                errors += f" '{i}' variable not defined in {filename}\n"
-
-        if errors:
-            print(f"Error while reading the file {filename}\n"+ errors, file=sys.stderr)
-            errors = "\n"
-
-    if errors:
-        sys.exit(1)

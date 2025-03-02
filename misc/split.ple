@@ -3,6 +3,8 @@
 
 sandbox = "python"
 
+@include misc/splitcode.py
+
 builder == #!lang=python
 from splitcode import splitcodestring
 

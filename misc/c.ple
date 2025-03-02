@@ -34,7 +34,16 @@ if 'ignore_stderr' not in globals():
 if 'use_returncode' not in globals():
     use_returncode = False
 
-ret = build(code_before + soluce + code_after, "profex", cflags=CFLAGS, ldflags=LDFLAGS, ldlibs=LDLIBS)
+reference_code = (""
+    + '#line 1 "code_before.c"\n'
+    + code_before
+    + '\n#line 1 "prof.c"\n'
+    + soluce 
+    + '\n#line 1 "code_after.c"\n'
+    + code_after
+)
+
+ret = build(reference_code, "profex", cflags=CFLAGS, ldflags=LDFLAGS, ldlibs=LDLIBS)
 if ret.returncode != 0:
     raise Exception("c.ple: Reference code cannot be built")
 
@@ -70,20 +79,32 @@ def build(code, output, cc='gcc', cflags=['-Wall'], ldflags=[], ldlibs=[]):
         capture_output=True, text=True
     )
 
+def indent(content, spaces):
+    return ''.join(spaces + line + '\n' for line in content.splitlines())
+
+submission_code = (""
+    + '#line 1 "code_before.c"\n'
+    + code_before
+    + '\n#line 1 "student.c"\n'
+    + code 
+    + '\n#line 1 "code_after.c"\n'
+    + code_after
+)
+
 executable_name = None
-ret = build(code_before + code + code_after, "studex", cflags=CFLAGS, ldflags=LDFLAGS, ldlibs=LDLIBS)
+ret = build(submission_code, "studex", cflags=CFLAGS, ldflags=LDFLAGS, ldlibs=LDLIBS)
 if ret.returncode != 0:
     grade = 0
     feedback = {
         'type': 'error',
-        'content': 'Le code ne compile pas :\n%s\n' % (ret.stdout + ret.stderr)
+        'content': 'Le code ne compile pas :\n\n%s\n' % (indent(ret.stdout + ret.stderr,'    '))
     }
 else:
-    if ret.stdout:
-        grade = 90
+    if ret.stdout or ret.stderr:
+        grade = max(0, 100 - 10 * ret.stdout.count("warning"))
         feedback = {
             'type': 'warning',
-            'content': 'Le code provoque ne semble pas propre :\n%s\n' % (ret.stdout + ret.stderr)
+            'content': 'Le code compile mais ne semble pas propre :\n\n%s\n' % (indent(ret.stdout + ret.stderr,'    '))
         }
     else:
         grade = 100

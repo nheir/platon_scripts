@@ -1,23 +1,19 @@
 @extends misc/multi_builder.ple
 
-multi_export = { "builder_0":["multi_export"] }
-builder_0 ==
-# Hack for low-cost ple parser
 multi_export = {
-    "builder_0": ["multi_export"],
     "builder_1": ["code_before", "code", "code_after", "soluce", "checks_args_stdin", "title", "statement"],
-    "builder_2": ["code_before"],
+    "builder_2": ["input"],
     "builder_3": ["CFLAGS", "LDFLAGS", "LDLIBS"],
     "grader_0": ["code"],
-    "grader_1": ["executable_name"],
+    "grader_1": ["executable_name"]
 }
-==
 
 
-subject_code = @copycontent example.c
+# Required :
+# subject_code = @copycontent fichier.c
 
-# input = :wc-code-editor
-# input.language = "c"
+input = :wc-code-editor
+input.language = "c"
 
 form==
 {{input}}
@@ -26,8 +22,10 @@ form==
 # Create variables for c builder/grader
 builder_1 = @extends misc/split.ple
 
-# Add memory tracker
-builder_2 = @extends misc/c_alloc_tracker.ple
+# Fill input
+builder_2 ==
+input['code'] = code
+==
 
 # Build reference code and test output
 builder_3 = @extends misc/c.ple
@@ -43,4 +41,12 @@ grader_1 = @extends misc/c.ple
 # Test
 grader_2 = @extends misc/executor.ple
 
-multi_grade_rule = [0,1,9]
+# Final grade
+grader_3 ==
+feedback = {
+    "type":"info",
+    "content":"Score : {{grade | round}} / 100"
+}
+==
+
+multi_grade_rule = [0,1,9,0]

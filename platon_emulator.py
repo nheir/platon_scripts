@@ -1,8 +1,6 @@
 import types
 from ple_parser import parse_syntax
 
-import argparse
-
 def clean(env):
     glob = {}
     exec("", glob)
@@ -27,6 +25,12 @@ def run(code, name, env):
     clean(env)
 
 if __name__ == "__main__":
+    import argparse
+    import os
+    import os.path
+    import sys
+    import tempfile
+
     parser = argparse.ArgumentParser(
         prog="PLaton Emulator",
         description="Emulate the execution of a PLaton exercice in PLaton"
@@ -59,7 +63,7 @@ if __name__ == "__main__":
             env[entry] = ''
 
     with open(args.exercice, "r") as f:
-        variables = parse_syntax(f.read())
+        variables, includes = parse_syntax(f.read())
 
     if args.input:
         with open(args.input, "r") as f:
@@ -70,20 +74,26 @@ if __name__ == "__main__":
     environment = variables
     environment.update(env)
 
-    if 'builder' in variables:
-        run(variables['builder'], 'builder', variables)
+    with tempfile.TemporaryDirectory() as include_dir:
+        for include in includes:
+            os.symlink(os.path.realpath(include), os.path.join(include_dir, os.path.basename(include)))
 
-    print("Title: ", variables['title'])
-    print("Statement: ", variables['statement'])
-    print("Input: ", input)
+        sys.path.append(include_dir)
 
-    variables['input'] = { "code": input }
+        if 'builder' in variables:
+            run(variables['builder'], 'builder', variables)
 
-    keys = list(variables)
+        print("Title: ", variables['title'])
+        print("Statement: ", variables['statement'])
+        print("Input: ", input)
 
-    variables['grade'] = -1
-    variables['feedback'] = []
-    run(variables['grader'], 'grader', variables)
+        variables['input'] = { "code": input }
+
+        keys = list(variables)
+
+        variables['grade'] = -1
+        variables['feedback'] = []
+        run(variables['grader'], 'grader', variables)
 
     print("Grade: ", variables['grade'])
     for feedback in variables['feedback']:

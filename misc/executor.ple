@@ -1,0 +1,153 @@
+# Requirement
+# - checks_args_stdin
+# - executable_name
+# Optional
+# - ignore_stderr
+# - use_returncode
+
+sandbox = "python"
+
+grader == #!lang=python
+import subprocess
+def indent(content, spaces):
+    return ''.join(spaces + line + '\n' for line in content.splitlines())
+
+OUTPUT_LIMIT = 10000
+
+TIMEOUT = 3
+
+signals = {
+    2: "SIGINT: Interrupt from keyboard",
+    3: "SIGQUIT: Quit from keyboard",
+    4: "SIGILL: Illegal Instruction",
+    6: "SIGABRT: Abort signal from abort",
+    8: "SIGFPE: Floating-point exception",
+    9: "SIGKILL: Kill signal",
+    11: "SIGSEGV: Invalid memory reference",
+    13: "SIGPIPE: Broken pipe: write to pipe with no readers",
+    14: "SIGALRM: Timer signal from alarm",
+    15: "SIGTERM: Termination signal"
+}
+
+def format_result(success,
+    test_name, cmdline, stdin, expected_output, output,
+    returncode, expected_returncode, timeout=False
+    ):
+    # Title
+    result = "::: {kind} {test_name}\n\n".format(test_name=test_name, msg="OK" if success else "FAILED", kind="success" if success else "failure")
+
+    # Command line
+    result += "**Command line:**\n\n{cmdline}\n\n".format(cmdline=indent(cmdline, '    '))
+
+    if timeout:
+        result += "**Process timeout**\n\n"
+    # Return code when used
+    elif use_returncode:
+        if not success and returncode != expected_returncode:
+            result += "**Return code:** expect {expect}, got {value}\n\n".format(expect=expected_returncode, value=returncode)
+        else:
+            result += "**Return code:** {value}\n\n".format(value=returncode)
+    elif returncode < 0:
+        result += "Process exited with UNIX signal ({code}) {desc}\n\n".format(code=-returncode, desc=signals[-returncode] if (-returncode) in signals else '')
+
+    # Input
+    if stdin:
+        result += "**Input:**\n\n{stdin}\n\n".format(stdin=indent(stdin, '    '))
+
+    # Invalid return code (don't display output)
+    if not timeout and use_returncode and returncode != expected_returncode:
+        result += "**Invalid return code:** {value}\n".format(value=returncode)
+    else:
+        # Crop output
+        if len(expected_output) > OUTPUT_LIMIT:
+            expected_output = "[too long: redacted]"
+            output = expected_output
+        elif len(output) > OUTPUT_LIMIT:
+            output = output[:OUTPUT_LIMIT]
+
+        if not success:
+            result += "**Expected output:**\n\n{output}\n\n".format(output=indent(expected_output, '    '))
+        result += "**Output:**\n\n{output}\n\n".format(output=indent(output, '    '))
+
+    result +=":::"
+    return result
+
+
+
+if 'ignore_stderr' not in globals():
+    ignore_stderr = False
+if 'use_returncode' not in globals():
+    use_returncode = False
+
+feedback = []
+if executable_name and checks_args_stdin:
+    success = 0
+    for test in checks_args_stdin:
+        name, args, stdin, expected_output = test[:4]
+        expected_returncode = 0
+
+        # Extract test return code
+        if use_returncode and test[4:]:
+            expected_returncode = test[4]
+
+        # cmdline
+        cmdline = [executable_name] + args
+
+        # Run submitted code
+        try:
+            ret = subprocess.run(cmdline,
+                input=stdin,
+                capture_output=True,
+                text=True,
+                bufsize=1,
+                errors="replace",
+                timeout=TIMEOUT
+            )
+        except subprocess.TimeoutExpired as e:
+            # note: output is a byte array
+            output = e.stdout + e.stderr if not ignore_stderr else e.stdout
+            feedback.append({
+                'type': 'error',
+                'content': format_result(
+                    success=False,
+                    test_name=name,
+                    cmdline=' '.join(cmdline),
+                    stdin=stdin if stdin else '',
+                    expected_output=expected_output,
+                    output=output,
+                    expected_returncode=expected_returncode,
+                    returncode=-1,
+                    timeout=True
+                )
+            })
+            continue
+
+        # Build output from stdout + stderr if not ignored
+        output = ret.stdout + ret.stderr if not ignore_stderr else ret.stdout
+
+        ok = (
+            expected_output == output and ret.returncode == expected_returncode and ret.returncode >= 0
+        )
+        feedback.append({
+            'type': 'success' if ok else 'error',
+            'content': format_result(
+                success=ok,
+                test_name=name,
+                cmdline=' '.join(cmdline),
+                stdin=stdin if stdin else '',
+                expected_output=expected_output,
+                output=output,
+                expected_returncode=expected_returncode,
+                returncode=ret.returncode
+            )
+        })
+        if ok:
+            success += 1
+    grade = 100 * success / len(checks_args_stdin)
+else:
+    grade = 100
+    feedback.append({
+        'type': 'success',
+        'content': 'Aucun test à réaliser',
+    })
+==

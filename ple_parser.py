@@ -5,6 +5,8 @@ def parse_syntax(input_text):
     multiline_key = None
     multiline_value = []
 
+    includes = []
+
     for line in lines:
         if multiline_key:
             # Inside a multiline block
@@ -23,8 +25,12 @@ def parse_syntax(input_text):
             elif line.startswith("@extends"):
                 file = line.split(' ', 1)[1].strip()
                 with open(file, "r") as f:
-                    ret = parse_syntax(f.read())
+                    ret, incs = parse_syntax(f.read())
                 data.update(ret)
+                includes.extend(incs)
+            elif line.startswith("@include"):
+                file = line.split(' ', 1)[1].strip()
+                includes.append(file)
             # Single-line or start of multiline block
             elif '==' in line:
                 # Start of multiline block
@@ -35,8 +41,9 @@ def parse_syntax(input_text):
                 if value.startswith("@extends"):
                     file = value.split(' ', 1)[1].strip()
                     with open(file, "r") as f:
-                        ret = parse_syntax(f.read())
+                        ret,incs = parse_syntax(f.read())
                     data[key] = ret
+                    includes.extend(incs)
                 elif value.startswith("@copycontent"):
                     file = value.split(' ', 1)[1].strip()
                     with open(file, "r") as f:
@@ -45,7 +52,7 @@ def parse_syntax(input_text):
                 else:
                     data[key] = eval(value)
 
-    return data
+    return data,includes
 
 if __name__ == "__main__":
     import sys
